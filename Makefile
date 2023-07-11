@@ -1,28 +1,47 @@
-CC:=g++
-CFLAGS:=-std:=c++17 -Wall
-TARGET:=vpl_execution
+CC = g++
+CFLAGS = -std=c++17 -Wall
 
-BUILD_DIR    := ./build
-SRC_DIR    := ./src
-INCLUDE_DIR  := ./include
+SRCDIR = src
+OBJDIR = obj
+BINDIR = bin
+TESTDIR = test
 
-./${TARGET}: ${BUILD_DIR}/deck.o ${BUILD_DIR}/jogador.o ${BUILD_DIR}/dealer.o ${BUILD_DIR}/main.o
-	${CC} ${CFLAGS} -o ${TARGET} ${BUILD_DIR}/*.o
+SOURCES = $(wildcard $(SRCDIR)/*.cpp)
+OBJECTS = $(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SOURCES))
+TEST_SOURCES = $(wildcard $(TESTDIR)/*.cpp)
+TEST_OBJECTS = $(patsubst $(TESTDIR)/%.cpp, $(OBJDIR)/%.o, $(TEST_SOURCES))
 
-${BUILD_DIR}/deck.o: ${INCLUDE_DIR}/carta.hpp 
+EXECUTABLE = $(BINDIR)/blackjack
+TEST_EXECUTABLE = $(BINDIR)/test_blackjack
 
-${BUILD_DIR}/deck.o: ${INCLUDE_DIR}/deck.hpp ${SRC_DIR}/entidades/deck.cpp
-    ${CC} ${CFLAGS} -I ${INCLUDE_DIR}/ -c ${SRC_DIR}/entidades/deck.cpp -o ${BUILD_DIR}/deck.o
+.PHONY: all clean run test
 
-${BUILD_DIR}/jogador.o: ${INCLUDE_DIR}/jogador.hpp ${SRC_DIR}/entidades/jogador.cpp
-	${CC} ${CFLAGS} -I ${INCLUDE_DIR}/ -c ${SRC_DIR}/entidades/jogador.cpp -o ${BUILD_DIR}/jogador.o
+all: $(EXECUTABLE)
 
-${BUILD_DIR}/dealer.o: ${INCLUDE_DIR}/dealer.hpp ${SRC_DIR}/entidades/dealer.cpp
-	${CC} ${CFLAGS} -I ${INCLUDE_DIR}/ -c ${SRC_DIR}/entidades/dealer.cpp -o ${BUILD_DIR}/dealer.o
+$(EXECUTABLE): $(OBJECTS) | directories
+	$(CC) $(CFLAGS) $^ -o $@
 
-${BUILD_DIR}/main.o: ${INCLUDE_DIR}/carta.hpp ${INCLUDE_DIR}/deck.hpp ${INCLUDE_DIR}/jogador.hpp ${SRC_DIR}/entidades/dealer.cpp ${SRC_DIR}/main.cpp
-	${CC} ${CFLAGS} -I ${INCLUDE_DIR}/ -c ${SRC_DIR}/main.cpp -o ${BUILD_DIR}/main.o
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Limpeza de arquivos build
+directories:
+	@mkdir -p $(OBJDIR)
+	@mkdir -p $(BINDIR)
+
 clean:
-	rm -f ${BUILD_DIR}/*
+	@rm -rf $(OBJDIR)/*.o $(EXECUTABLE) $(TEST_EXECUTABLE)
+
+run: $(EXECUTABLE)
+	./$(EXECUTABLE)
+
+test: $(TEST_EXECUTABLE)
+	./$(TEST_EXECUTABLE)
+
+$(TEST_EXECUTABLE): $(OBJECTS) $(TEST_OBJECTS) | directories
+	$(CC) $(CFLAGS) $^ -o $@
+
+$(OBJDIR)/%.o: $(TESTDIR)/%.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
